@@ -87,6 +87,78 @@ router.post('/signin', function (req, res) {
     })
 });
 
+// GET MOVIES
+router.get('/movies', authJwtController.isAuthenticated, (req, res) => {
+    Movie.find({ title: { $exists: true } })
+        .then(movies => {
+            res.status(200).json(movies);
+        })
+        .catch(error => {
+            console.error('Error finding movies:', error);
+            res.status(500).json({ error: 'An error occurred while finding movies' });
+        });
+});
+
+// POST MOVIES
+router.post('/movies', authJwtController.isAuthenticated, (req, res) => {
+    const { title, releaseDate, genre, actors } = req.body;
+    const newMovie = new Movie({ title, releaseDate, genre, actors });
+
+    newMovie.save()
+        .then(savedMovie => {
+            res.status(200).json(savedMovie);
+        });
+});
+
+// GET MOVIES
+router.put('/movies/:id', authJwtController.isAuthenticated, (req, res) => {
+    const { id } = req.params;
+    const { title, releaseDate, genre, actors } = req.body;
+
+    Movie.findByIdAndUpdate(id, { title, releaseDate, genre, actors }, { new: true })
+        .then(updatedMovie => {
+            if (!updatedMovie) {
+                return res.status(404).json({ error: 'Movie not found' });
+            }
+            res.status(200).json(updatedMovie);
+        })
+        .catch(error => {
+            console.error('Error updating movie:', error);
+            res.status(500).json({ error: 'An error occurred while updating the movie' });
+        });
+});
+
+router.delete('/movies/:id', authJwtController.isAuthenticated, (req, res) => {
+    const { id } = req.params;
+
+    Movie.findByIdAndDelete(id)
+        .then(deletedMovie => res.status(200).json(deletedMovie))
+        .catch(error => res.status(500).json({ error: 'An error occurred while deleting the movie' }));
+});
+
+// GET REVIEWS
+router.get('/reviews', authJwtController.isAuthenticated, (req, res) => {
+    Review.find({ title: { $exists: true } })
+        .then(reviews => {
+            res.status(200).json(movies);
+        })
+        .catch(error => {
+            console.error('Error finding movies:', error);
+            res.status(500).json({ error: 'An error occurred while finding reviews' });
+        });
+});
+
+// POST REVIEWS
+router.post('/reviews', authJwtController.isAuthenticated, (req, res) => {
+    const { movieId, username, review, rating } = req.body;
+    const newReview = new Review({ movieId, username, review, rating });
+
+    newReview.save()
+        .then(savedReview => {
+            res.status(200).json(savedReview);
+        });
+});
+
 app.use('/', router);
 app.listen(process.env.PORT || 8080);
 module.exports = app; // for testing only
