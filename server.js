@@ -138,7 +138,7 @@ router.delete('/movies/:id', authJwtController.isAuthenticated, (req, res) => {
 
 // GET REVIEWS
 router.get('/reviews', authJwtController.isAuthenticated, (req, res) => {
-    Review.find({ title: { $exists: true } })
+    Review.find()
         .then(reviews => {
             res.status(200).json(movies);
         })
