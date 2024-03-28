@@ -138,15 +138,17 @@ router.delete('/movies/:id', authJwtController.isAuthenticated, (req, res) => {
 
 // GET REVIEWS
 router.get('/reviews', (req, res) => {
-    Review.find()
-        .then(reviews => {
-            res.status(200).json(movies);
-        })
-        .catch(error => {
-            console.error('Error finding movies:', error);
-            res.status(500).json({ error: 'An error occurred while finding reviews' });
+    console.log("Returning reviews");
+    Review.find(req.query, function(err, movie) {
+            if(err) {
+                console.log("Failed to return reviews.");
+                res.status(500).json({ 'message': 'Failed to get reviews.' });
+            } else {
+                console.log("Returned reviews successfully.");
+                res.json(movie);
+            }
         });
-});
+    })
 
 // POST REVIEWS
 router.post('/reviews', authJwtController.isAuthenticated, (req, res) => {
@@ -156,6 +158,7 @@ router.post('/reviews', authJwtController.isAuthenticated, (req, res) => {
     newReview.save()
         .then(savedReview => {
             res.status(200).json(savedReview);
+            console.log('Review created!');
         });
 });
 
