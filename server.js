@@ -112,15 +112,16 @@ router.post('/movies', authJwtController.isAuthenticated, (req, res) => {
 
 
 router.route('/movies/:id')
-    .get((req,res) => {
+    .get(async (req, res) => {
         console.log("GET /movies");
         const { id } = req.params;
         var dict = [];
 
-        Movie.findOne( { _id : id } ).then(movie => {
-            if(!movie){
+        try {
+            const movie = await Movie.findOne({ _id: id });
+            if (!movie) {
                 console.log("Movie not found.");
-                res.status(400).json({success: false, msg: 'Movie not in database'});
+                res.status(400).json({ success: false, msg: 'Movie not in database' });
                 return;
             }
             dict.push({
@@ -128,24 +129,18 @@ router.route('/movies/:id')
                 value: movie
             });
 
-            return dict;
-
-        }).then(result => {
-            if (!result){
-                return;
-            } else if(req.query.reviews) {          
-                Review.find( { movieId : id }).then(reviews => {
-                    dict.push({
-                        key: 'reviews',
-                        value: reviews
-                    });
-                }).then(result => {
-                    res.json(dict);
+            if (req.query.reviews) {
+                const reviews = await Review.find({ movieId: id });
+                dict.push({
+                    key: 'reviews',
+                    value: reviews
                 });
-            } else {
-                res.json(dict);
-            }   
-        });
+            }
+            res.json(dict);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ success: false, msg: 'Server error' });
+        }
     })
 
     .put(authJwtController.isAuthenticated,(req, res) => {
