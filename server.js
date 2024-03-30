@@ -110,31 +110,77 @@ router.post('/movies', authJwtController.isAuthenticated, (req, res) => {
         });
 });
 
-// GET MOVIES
-router.put('/movies/:id', authJwtController.isAuthenticated, (req, res) => {
-    const { id } = req.params;
-    const { title, releaseDate, genre, actors } = req.body;
 
-    Movie.findByIdAndUpdate(id, { title, releaseDate, genre, actors }, { new: true })
-        .then(updatedMovie => {
-            if (!updatedMovie) {
-                return res.status(404).json({ error: 'Movie not found' });
+router.route('/movies/:id')
+    .get((req,res) => {
+        console.log("GET /movies");
+        const { id } = req.params;
+        var dict = [];
+
+        Movie.findOne( { _id : id } ).then(movie => {
+            if(!movie){
+                console.log("Movie not found.");
+                res.status(400).json({success: false, msg: 'Movie not in database'});
+                return;
             }
-            res.status(200).json(updatedMovie);
-        })
-        .catch(error => {
-            console.error('Error updating movie:', error);
-            res.status(500).json({ error: 'An error occurred while updating the movie' });
+            dict.push({
+                key: 'movie',
+                value: movie
+            });
+
+            return dict;
+
+        }).then(result => {
+            if (!result){
+                return;
+            } else if(req.query.reviews) {          
+                Review.find( { movieId : id }).then(reviews => {
+                    dict.push({
+                        key: 'reviews',
+                        value: reviews
+                    });
+                }).then(result => {
+                    res.json(dict);
+                });
+            } else {
+                res.json(dict);
+            }   
         });
-});
+    })
 
-router.delete('/movies/:id', authJwtController.isAuthenticated, (req, res) => {
-    const { id } = req.params;
+    .put(authJwtController.isAuthenticated,(req, res) => {
+        console.log("PUT /movies");
+        const { id } = req.params;
+        const { title, releaseDate, genre, actors } = req.body;
+        const newMovie = new Movie({ title, releaseDate, genre, actors });
+        
+        Movie.updateOne( { _id : id }, newMovie, function(err){
+            if (err) {
+                console.log("Failed to update movie.");
+                return res.json(err);
+            }
+            console.log("Updated movie.");
+            res.json({success: true, msg: 'Successfully updated movie.'})
+        });
+        
+    })
+    .delete(authJwtController.isAuthenticated,(req, res) => {
+        const { id } = req.params;
 
-    Movie.findByIdAndDelete(id)
-        .then(deletedMovie => res.status(200).json(deletedMovie))
-        .catch(error => res.status(500).json({ error: 'An error occurred while deleting the movie' }));
-});
+        Movie.deleteOne( { _id: id } , function(err){
+            if (err) {
+                console.log("Failed to delete movie.");
+                return res.json(err);
+            }
+            console.log("Movie deleted.");
+            res.json({success: true, msg: 'Successfully deleted movie.'})
+        });
+    })
+    .all((req,res)=> {
+        // Any other HTTP Method
+        // Returns a message stating that the HTTP method is unsupported.
+        res.status(405).send({ message: 'HTTP method not supported.' });
+    });
 
 // GET REVIEWS
 router.get('/reviews', (req, res) => {
