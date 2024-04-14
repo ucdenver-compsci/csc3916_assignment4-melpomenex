@@ -1,12 +1,9 @@
 var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
-
 mongoose.connect(process.env.DB);
 
-// Movie schema
-var MovieSchema = new Schema({
-    title: { type: String, required: true, index: true },
-    releaseDate: Date,
+const MovieSchema = new mongoose.Schema({
+  title: { type: String, required: true, index: true },
+    releaseDate: { type: Number, min: [1900, 'Must be greater than 1899'], max: [2100, 'Must be less than 2100']},
     genre: {
       type: String,
       enum: [
@@ -14,11 +11,13 @@ var MovieSchema = new Schema({
       ],
     },
     actors: [{
-      actorName: String,
+      actorName: String, 
       characterName: String,
     }],
-    imageUrl: String,
-});
+    imageUrl: { type: String }, 
+  }, { collection : 'movies' });
+  
 
-// return the model
-module.exports = mongoose.model('Movie', MovieSchema);
+//return the model
+const MovieModel = mongoose.model('Movie', MovieSchema);
+module.exports = MovieModel;
