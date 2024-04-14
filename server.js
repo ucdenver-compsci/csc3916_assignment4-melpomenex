@@ -88,15 +88,46 @@ router.post('/signin', function (req, res) {
 });
 
 // GET MOVIES
-router.get('/movies', authJwtController.isAuthenticated, (req, res) => {
-    Movie.find({ title: { $exists: true } })
-        .then(movies => {
-            res.status(200).json(movies);
-        })
-        .catch(error => {
-            console.error('Error finding movies:', error);
-            res.status(500).json({ error: 'An error occurred while finding movies' });
-        });
+router.get('/movies', (req, res) => {
+    if (req.query.reviews == "true")
+        {
+            const aggregate = [
+                {
+                    $lookup: {
+                        from: 'reviews',
+                        localField: '_id',
+                        foreignField: 'movieId',
+                        as: 'reviews'
+                    }
+                },
+                {
+                  $addFields: {
+                    avgRating: { $avg: '$reviews.rating' }
+                  }
+                },
+                {
+                  $sort: { avgRating: -1 }
+                }
+            ];
+            Movie.aggregate(aggregate).exec(function(err, doc) 
+            {
+                if (err)
+                {
+                    console.log(err)
+                }
+                res.json({success: true, movies: doc});
+            });
+        }
+        else
+        {
+            Movie.find({}).exec(function(err, movies) {
+            if (err) {
+                console.log(err);
+            }
+
+            res.json ({success: true, movies: movies})
+            })   
+        }
 });
 
 // POST MOVIES
