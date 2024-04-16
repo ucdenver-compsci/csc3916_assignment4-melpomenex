@@ -88,47 +88,49 @@ router.post('/signin', function (req, res) {
 });
 
 // GET MOVIES
-router.get('/movies', (req, res) => {
-    if (req.query.reviews == "true")
+router.get('/movies', authJwtController.isAuthenticated, (req, res) => {
+   const aggregate = [
         {
-            const aggregate = [
-                {
-                    $lookup: {
-                        from: 'reviews',
-                        localField: '_id',
-                        foreignField: 'movieId',
-                        as: 'reviews'
-                    }
-                },
-                {
-                  $addFields: {
-                    avgRating: { $avg: '$reviews.rating' }
-                  }
-                },
-                {
-                  $sort: { avgRating: -1 }
-                }
-            ];
-            Movie.aggregate(aggregate).exec(function(err, doc) 
-            {
-                if (err)
-                {
-                    console.log(err)
-                }
-                res.json({success: true, movies: doc});
-            });
-        }
-        else
-        {
-            Movie.find({}).exec(function(err, movies) {
-            if (err) {
-                console.log(err);
+            $lookup: {
+                from: 'reviews',
+                localField: '_id',
+                foreignField: 'movieId',
+                as: 'movieReviews'
             }
-
-            res.json ({success: true, movies: movies})
-            })   
+        },
+        {
+            $addFields: {
+                avgRating: { $avg: '$movieReviews.rating' }
+            }
+        },
+        {
+            $sort: { avgRating: -1 }
         }
+    ];
+
+    Movie.aggregate(aggregate).exec((err, movies) => {
+        if (err) {
+            // Handle error if any
+            res.status(500).json({ success: false, message: 'Internal Server Error' });
+        } else {
+            if (req.query.reviews == "true") {
+                // Return movies with reviews if requested
+                res.json(movies);
+            } else {
+                // Return movies without reviews
+                const unreviewedMovies = movies.map(movie => ({
+                    title: movie.title,
+                    releaseDate: movie.releaseDate,
+                    genre: movie.genre,
+                    actors: movie.actors,
+                    imageUrl: movie.imageUrl
+                }));
+                res.json(unreviewedMovies);
+            }
+        }
+    });
 });
+
 
 // POST MOVIES
 router.post('/movies', authJwtController.isAuthenticated, (req, res) => {
